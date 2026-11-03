@@ -3,19 +3,34 @@
 #include <stdexcept>
 
 Bitfield::Bitfield(): _data(nullptr), _size(0){}
-Bitfield::Bitfield(size_t _size) :_size(_size) {
-    _data = new unsigned int[(_size + 31) / 32]();
-
-}
-Bitfield::Bitfield(const Bitfield& other) :_size(other._size) {
-    size_t array_size = (_size + 31) / 32;
-    _data = new unsigned int[array_size];
-    for (size_t i = 0; i < array_size; i++) {
-        _data[i] = other._data[i];
+Bitfield::Bitfield(size_t _size) : _size(_size) {
+    if (_size == 0) {
+        _data = nullptr;
+    }
+    else {
+        _data = new unsigned int[(_size + 31) / 32]();
     }
 }
+
+Bitfield::Bitfield(const Bitfield& other) : _size(other._size) {
+    if (_size == 0) {
+        _data = nullptr;
+    }
+    else {
+        size_t array_size = (_size + 31) / 32;
+        _data = new unsigned int[array_size];
+        for (size_t i = 0; i < array_size; i++) {
+            _data[i] = other._data[i];
+        }
+    }
+}
+
 Bitfield::~Bitfield() {
     delete[] _data;
+}
+
+size_t Bitfield::get_size() const noexcept {
+    return _size;
 }
 
 size_t Bitfield::get_index(size_t pos) const{
@@ -108,9 +123,40 @@ Bitfield& Bitfield::operator&=(const Bitfield& other) {
 Bitfield Bitfield::operator~() const {
     Bitfield next(this->_size);
     size_t array_size = (this->_size + 31) / 32;
-
     for (size_t i = 0; i < array_size; i++) {
         next._data[i] = ~this->_data[i];
     }
+    next.clear_bits();
     return next;
 }
+
+void Bitfield::clear_bits() {
+    if (_size == 0) return;
+    size_t total_bits = ((_size + 31) / 32) * 32;
+    size_t unused_bits = total_bits - _size;
+    if (unused_bits > 0) {
+        unsigned int mask = ~0;
+        mask <<= unused_bits;
+        _data[(_size + 31) / 32 - 1] &= mask;
+    }
+}
+
+std::ostream& operator<<(std::ostream& out, const Bitfield& bf) {
+    for (size_t i = 1; i <= bf.get_size(); ++i) {
+        out << (bf.get_bit(i) ? '1' : '0');
+    }
+    return out;
+}
+
+std::istream& operator>>(std::istream& in, Bitfield& bf) {
+    std::string str;
+    if (in >> str) {
+        Bitfield temp(str.length());
+        for (size_t i = 0; i < str.length(); ++i) {
+            if (str[i] == '1') temp.set_bit(i + 1);
+        }
+        bf = std::move(temp);
+    }
+    return in;
+}
+
