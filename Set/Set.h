@@ -9,7 +9,7 @@ public:
     Set(size_t);
     Set(const Set&);
     Set(Set&&) noexcept;
-    Set(const Bitfield);
+    Set(const Bitfield&);
 
     operator Bitfield() const noexcept;
     void insert(int);
